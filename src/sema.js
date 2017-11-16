@@ -53,7 +53,7 @@ function processFunction(functionNode) {
                     // console.error('\n\n!!!Found a side effect node!');
                     // console.log('Line ', left.loc.start.line, 'contains a side effect, with the identifier', left.object.name, '\n');
                     sideEffectsAccumulator = sideEffectsAccumulator.concat(
-                        `Line ${left.loc.start.line} contains a side effect, namely modifing the identifier ${left.object.name}, which is bound in the function named ${functionNode.id.name}\n`
+                        `Line ${left.loc.start.line} contains a side effect, namely modifing the identifier ${left.object.name}, which is bound in the function named ${functionNode.id.name} at line ${functionNode.loc.start.line}`
                     );
                 }
             }
@@ -73,47 +73,39 @@ function pullAllStatements(nodesToInspect, allResults = []) {
     const node = nodesToInspect[0];
     const restNodes = nodesToInspect.slice(1);
 
-    // any of these will have a body of substatements we have to inspect:
-    if (nodesWithBodies.includes(node.type)) {
-        const resultingNodesToInspect = restNodes
-            // and add the new nodes
-            .concat(...node.body);
+    let nodesToAdd;
 
-        return pullAllStatements(resultingNodesToInspect, allResults);
+    switch(node.type) {
+        case 'BlockStatement':
+        case 'WithStatement':
+        case 'LabeledStatement':
+            const resultingNodesToInspect = restNodes.concat(...node.body);
+            return pullAllStatements(resultingNodesToInspect, allResults);
+        case 'IfStatement':
+            // only add the alternate if it's there
+            nodesToAdd = node.alternate
+                ? [ node.test, node.consequent, node.alternate ]
+                : [ node.test, node.consequent ];
+
+            return pullAllStatements(
+                restNodes.concat(...nodesToAdd),
+                allResults
+            );
+        case 'SwitchStatement':
+            nodesToAdd = [
+                node.discriminant,
+                // add all the test cases, but also remove the default (which will be null for test)
+                ...(node.cases.map(switchCase => switchCase.test).filter(i => i)),
+                ...(node.cases.map(switchCase => switchCase.consequent)),
+            ];
+
+            return pullAllStatements(restNodes.concat(...nodesToAdd), allResults);
+        case 'ExpressionStatement':
+            return pullAllStatements(restNodes.concat(node.expression), allResults);
+        default:
+            // otherwise this node is good and doesn't have subsequent bodies, so we'll just add it to the results!
+            return pullAllStatements(restNodes, allResults.concat(node));
     }
-
-
-    // choice statements will also have substatements:
-    if (node.type === 'IfStatement') {
-        // only add the alternate if it's there
-        const nodesToAdd = node.alternate
-            ? [ node.test, node.consequent, node.alternate ]
-            : [ node.test, node.consequent ];
-
-        return pullAllStatements(
-            restNodes.concat(...nodesToAdd),
-            allResults
-        );
-    }
-
-    if (node.type === 'SwitchStatement') {
-        const nodesToAdd = [
-            node.discriminant,
-            // add all the test cases, but also remove the default (which will be null for test)
-            ...(node.cases.map(switchCase => switchCase.test).filter(i => i)),
-            ...(node.cases.map(switchCase => switchCase.consequent)),
-        ];
-
-        return pullAllStatements(restNodes.concat(...nodesToAdd), allResults);
-    }
-
-    if (node.type === 'ExpressionStatement') {
-        return pullAllStatements(restNodes.concat(node.expression), allResults);
-    }
-
-    // otherwise this node is good and doesn't have subsequent bodies, so we'll just add it to the results!
-
-    return pullAllStatements(restNodes, allResults.concat(node));
 }
 
 
