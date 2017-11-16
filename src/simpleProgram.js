@@ -6,6 +6,9 @@ function sideEffect(modifies, leavesAlone) {
         modifies.z = 3;
     }
 
+    const x = [1,2,3];
+    x.splice(1,2);
+
     switch(modifies.x) {
         case 1:
             modifies.x = 4;
@@ -13,6 +16,8 @@ function sideEffect(modifies, leavesAlone) {
         default:
             modifies.x = 5
     }
+
+    [1,2,3].shift();
 
     return leavesAlone;
 }

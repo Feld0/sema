@@ -2,10 +2,12 @@ const bablyon = require('babylon');
 const fs = require('fs');
 
 
-const nodesWithBodies = [
-    'BlockStatement',
-    'WithStatement',
-    'LabeledStatement',
+const BLACKLIST_FUNCTIONS = [
+    // array functions
+    'splice',
+    'fill',
+    'shift',
+    'unshift',
 ];
 
 function main() {
@@ -58,9 +60,21 @@ function processFunction(functionNode) {
                 }
             }
         }
+
+        if (node.type === 'CallExpression') {
+            if (BLACKLIST_FUNCTIONS.includes(node.callee.property.name)) {
+                sideEffectsAccumulator =  sideEffectsAccumulator.concat(
+                    `Line ${node.loc.start.line} contains a blacklisted function, namely "${node.callee.property.name}". Please replace this with a function that does not mutate.`
+                );
+            }
+        }
     }
 
-    console.error(sideEffectsAccumulator);
+    if (sideEffectsAccumulator.length > 1) {
+        console.error(sideEffectsAccumulator);
+    } else {
+        console.log(`The given function ${functionNode.id.name} has no side effects or mutations we could find. Congratulations!`);
+    }
 }
 
 
