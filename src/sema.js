@@ -34,7 +34,7 @@ function processFunction(functionNode) {
     // console.log(' The function node: ', functionNode, '\n');
 
     // side note: here we have to go into the function's block statement, as it contains everything:
-    const allNodes = functionNode.body.body;
+    const allNodes = pullAllStatements([functionNode.body]);
 
     // Examine each Statement in the Function Declaration Body, and for each:
     for (let i = 0; i < allNodes.length; i++) {
@@ -42,47 +42,18 @@ function processFunction(functionNode) {
         // console.log('A function statement: ', node, '\n');
 
         //check if the statement is an Assignment Expression. If so:
-        if (node.type === 'ExpressionStatement') {
-            const expressionNode = node.expression;
+        if (node.type === "AssignmentExpression") {
+            // Examine the left hand side of the Assignment Expression, and if the result is an identifier, or a
+            const { left, right } = node;
+            // Member Expression with the object property being an Identifier contained within IDS:
+            if (left.type === 'MemberExpression') {
+                // console.log('left', left, '\n');
 
-            if (expressionNode.type === "AssignmentExpression") {
-                // Examine the left hand side of the Assignment Expression, and if the result is an identifier, or a
-                const { left, right } = expressionNode;
-                // Member Expression with the object property being an Identifier contained within IDS:
-                if (left.type === 'MemberExpression') {
-                    // console.log('left', left, '\n');
-
-                    if (left.object.type === 'Identifier' && ids.includes(left.object.name)) {
-                        console.error('\n\n!!!Found a side effect node!');
-                        console.log('Line ', left.loc.start.line, 'contains a side effect, with the identifier', left.object.name, '\n');
-                    }
+                if (left.object.type === 'Identifier' && ids.includes(left.object.name)) {
+                    console.error('\n\n!!!Found a side effect node!');
+                    console.log('Line ', left.loc.start.line, 'contains a side effect, with the identifier', left.object.name, '\n');
                 }
             }
-        }
-
-        // any of these will have substatements we have to inspect:
-        if (nodesWithBodies.includes(node.type)) {
-            // add all of the substatements to the nodes we need to examine
-            console.log('adding a body node:', node);
-            allNodes.push(...node.body);
-        }
-
-
-        // choice statements will also have substatements:
-        if (node.type === 'IfStatement') {
-            console.log('adding an if statement node:', node);
-            allNodes.push(node.test, node.consequent);
-            if (node.alternate) {
-                allNodes.push(node.alternate);
-            }
-        }
-
-        if (node.type === 'SwitchStatement') {
-            console.log('adding a switch statement node:', node);
-            allNodes.push(node.discriminant);
-            // get all the expressions, and filter out any null cases (for default:)
-            allNodes.push(node.cases.map(switchCase => switchCase.test).filter(i => i));
-            allNodes.push(node.cases.map(switchCase => switchCase.consequent));
         }
     }
 
@@ -90,6 +61,54 @@ function processFunction(functionNode) {
     console.log('\n\n all nodes we found: ', allNodes);
 }
 
+
+function pullAllStatements(nodesToInspect, allResults = []) {
+    if (nodesToInspect.length < 1) {
+        return allResults;
+    }
+
+    // we'll just examine the first element, and recurse with rest later
+    const node = nodesToInspect[0];
+    const restNodes = nodesToInspect.slice(1);
+
+    // any of these will have a body of substatements we have to inspect:
+    if (nodesWithBodies.includes(node.type)) {
+        const resultingNodesToInspect = restNodes
+            // and add the new nodes
+            .concat(...node.body);
+
+        return pullAllStatements(resultingNodesToInspect, allResults);
+    }
+
+
+    // choice statements will also have substatements:
+    if (node.type === 'IfStatement') {
+        // only add the alternate if it's there
+        const nodesToAdd = node.alternate
+            ? [ node.test, node.consequent, node.alternate ]
+            : [ node.test, node.consequent ];
+
+        return pullAllStatements(
+            restNodes.concat(...nodesToAdd),
+            allResults
+        );
+    }
+
+    if (node.type === 'SwitchStatement') {
+        const nodesToAdd = [
+            node.discriminant,
+            // add all the test cases, but also remove the default (which will be null for test)
+            ...node.cases.map(switchCase => switchCase.test).filter(i => i),
+            ...node.cases.map(switchCase => switchCase.consequent),
+        ];
+
+        return pullAllStatements(restNodes.concat(...nodesToAdd), allResults);
+    }
+
+    // otherwise this node is good and doesn't have subsequent bodies, so we'll just add it to the results!
+
+    return pullAllStatements(restNodes, allResults.concat(node));
+}
 
 
 
