@@ -1,6 +1,13 @@
 const bablyon = require('babylon');
 const fs = require('fs');
 
+
+const nodesWithBodies = [
+    'BlockStatement',
+    'WithStatement',
+    'LabeledStatement',
+]
+
 function main() {
     // 1. Read the file using the built-in library method fs.readFileSync() called with F
     const sampleFile = fs.readFileSync('./src/simpleProgram.js', 'utf-8');
@@ -54,14 +61,36 @@ function processFunction(functionNode) {
         }
 
         // any of these will have substatements we have to inspect:
-        // if (node.type === '') {
-        //
-        // }
+        if (nodesWithBodies.includes(node.type)) {
+            // add all of the substatements to the nodes we need to examine
+            console.log('adding a body node:', node);
+            allNodes.push(...node.body);
+        }
+
+
+        // choice statements will also have substatements:
+        if (node.type === 'IfStatement') {
+            console.log('adding an if statement node:', node);
+            allNodes.push(node.test, node.consequent);
+            if (node.alternate) {
+                allNodes.push(node.alternate);
+            }
+        }
+
+        if (node.type === 'SwitchStatement') {
+            console.log('adding a switch statement node:', node);
+            allNodes.push(node.discriminant);
+            // get all the expressions, and filter out any null cases (for default:)
+            allNodes.push(node.cases.map(switchCase => switchCase.test).filter(i => i));
+            allNodes.push(node.cases.map(switchCase => switchCase.consequent));
+        }
     }
 
 
-
+    console.log('\n\n all nodes we found: ', allNodes);
 }
+
+
 
 
 main();
