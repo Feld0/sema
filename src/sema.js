@@ -18,8 +18,7 @@ function sema(fileToRead) {
     // returning the Abstract Syntax Tree assigned to the variable `A` (ast)
     const ast = bablyon.parse(sampleFile);
 
-
-
+    const allFunctionResults = [];
     // todo: add class support
     const { body } = ast.program;
     // For each Node in the file, do the following:
@@ -27,7 +26,15 @@ function sema(fileToRead) {
         const node = body[i];
         // Examine the node to see if it is a Function Declaration.
         if (node.type === "FunctionDeclaration") {
-            processFunction(node);
+            allFunctionResults.push(processFunction(node));
+        }
+    }
+
+    for (let i = 0; i < allFunctionResults.length; i++) {
+        if (typeof allFunctionResults[i] === "string") {
+            console.log("\033[32m", allFunctionResults[i], "\033[32m\n");
+        } else {
+            console.log("\033[31m", allFunctionResults[i], "\033[31m");
         }
     }
 }
@@ -74,9 +81,10 @@ function processFunction(functionNode) {
     }
 
     if (sideEffectsAccumulator.length > 1) {
-        console.error(sideEffectsAccumulator);
+        return sideEffectsAccumulator;
+        // console.error(sideEffectsAccumulator);
     } else {
-        console.log(`The given function ${functionNode.id.name} has no side effects or mutations we could find. Congratulations!`);
+        return `The given function ${functionNode.id.name} has no side effects or mutations we could find. Congratulations!`;
     }
 }
 
