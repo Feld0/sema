@@ -10,14 +10,17 @@ const BLACKLIST_FUNCTIONS = [
     'unshift',
 ];
 
-function main() {
+function sema(fileToRead) {
     // 1. Read the file using the built-in library method fs.readFileSync() called with F
-    const sampleFile = fs.readFileSync('./src/simpleProgram.js', 'utf-8');
+    const sampleFile = fs.readFileSync(fileToRead, 'utf-8');
 
     // 2. Use the Babylon package’s function `babylon.parse()` on the file,
     // returning the Abstract Syntax Tree assigned to the variable `A` (ast)
     const ast = bablyon.parse(sampleFile);
 
+
+
+    // todo: add class support
     const { body } = ast.program;
     // For each Node in the file, do the following:
     for (let i = 0; i < body.length; i++) {
@@ -124,5 +127,9 @@ function pullAllStatements(nodesToInspect, allResults = []) {
 
 
 
+function main() {
+    const fileToProcess = process.argv[2] || './src/simpleProgram.js';
+    sema(fileToProcess);
+}
 main();
 
