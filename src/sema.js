@@ -80,7 +80,7 @@ function processFunction(functionNode) {
         }
     }
 
-    if (sideEffectsAccumulator.length > 1) {
+    if (sideEffectsAccumulator.length > 0) {
         return sideEffectsAccumulator;
         // console.error(sideEffectsAccumulator);
     } else {

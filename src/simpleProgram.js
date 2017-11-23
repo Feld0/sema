@@ -26,3 +26,7 @@ function noEffects(noModify, alsoNoModify) {
     const me = 12;
     return me;
 }
+
+function asdf(j) {
+    j.modifies = 1;
+}
