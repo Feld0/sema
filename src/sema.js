@@ -7,6 +7,8 @@ const BLACKLIST_FUNCTIONS = [
     'splice',
     'fill',
     'shift',
+    'push',
+    'pop',
     'unshift',
 ];
 
