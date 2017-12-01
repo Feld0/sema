@@ -72,7 +72,7 @@ function processFunction(functionNode) {
         }
 
         if (node.type === 'CallExpression') {
-            if (BLACKLIST_FUNCTIONS.includes(node.callee.property.name)) {
+            if (node.callee.type !== 'FunctionExpression' &&BLACKLIST_FUNCTIONS.includes(node.callee.property.name)) {
                 sideEffectsAccumulator =  sideEffectsAccumulator.concat(
                     `Line ${node.loc.start.line} contains a blacklisted function, namely "${node.callee.property.name}". Please replace this with a function that does not mutate.`
                 );
@@ -101,6 +101,7 @@ function pullAllStatements(nodesToInspect, allResults = []) {
     let nodesToAdd;
 
     switch(node.type) {
+        case 'ArrowFunctionExpression': // TODO: do same thing as the local function body case
         case 'BlockStatement':
         case 'WithStatement':
         case 'LabeledStatement':
@@ -127,6 +128,13 @@ function pullAllStatements(nodesToInspect, allResults = []) {
             return pullAllStatements(restNodes.concat(...nodesToAdd), allResults);
         case 'ExpressionStatement':
             return pullAllStatements(restNodes.concat(node.expression), allResults);
+        case 'FunctionStatement':
+            // Note these will always refer to a local function inside whatever function we are in
+            // There is a case where the top level function will pass values to a local function
+            // and then the local function will mutate those values.
+            // TODO: handle that case by returning extra IDs to search for
+            return pullAllStatements(restNodes.concat(node.body), allResults);
+
         default:
             // otherwise this node is good and doesn't have subsequent bodies, so we'll just add it to the results!
             return pullAllStatements(restNodes, allResults.concat(node));

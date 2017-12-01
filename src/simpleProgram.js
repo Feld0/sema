@@ -19,6 +19,14 @@ function sideEffect(modifies, leavesAlone) {
 
     [1,2,3].shift();
 
+    // Arrow functions
+    const y = () => { return modifies.y = 12 };
+
+    // local functions (including immediately invoked function expressions (iife)
+    (function() {
+        modifies.f = 13;
+    })();
+
     return leavesAlone;
 }
 
