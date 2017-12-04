@@ -52,14 +52,25 @@ function sema(fileToRead) {
         }
     }
 
+    if (allFunctionResults.filter(r => typeof r === 'string').length === 0) {
+        // console.log('We found no side effects');
+        console.log("\033[32m", `For file ${fileToRead}:`, "\033[32m");
+        console.log("\033[32m", 'We found no side effects', "\033[32m");
+        console.log('\n');
+        return;
+    }
+
+    console.log("\033[31m", `For file ${fileToRead}:`, "\033[31m\n");
     for (let i = 0; i < allFunctionResults.length; i++) {
         if (typeof allFunctionResults[i] === "string") {
-            console.log("\033[31m", allFunctionResults[i], "\033[31m\n");
+            console.log("\033[31m\t", allFunctionResults[i], "\033[31m\n");
         } else {
             // we won't do anything if there was no bad stuff to ferret out bad results
             // console.log("\033[31m", allFunctionResults[i], "\033[31m");
         }
     }
+
+    console.log('\n');
 }
 
 function processFunction(functionNode) {
@@ -165,8 +176,9 @@ function pullAllStatements(nodesToInspect, allResults = []) {
 
 
 function main() {
-    const fileToProcess = process.argv[2] || './src/simpleProgram.js';
-    sema(fileToProcess);
+    const dirToProcess = process.argv[2] || './src/';
+    fs.readdirSync(dirToProcess).forEach(filename => sema(`${dirToProcess}/${filename}`));
+
 }
 main();
 
