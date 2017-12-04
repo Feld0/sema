@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "babylon": "^6.18.0"
+    "babylon": "^7.0.0"
   },
   "scripts": {
     "start": "node src/sema.js"

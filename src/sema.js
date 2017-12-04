@@ -22,7 +22,9 @@ function sema(fileToRead) {
 
     // 2. Use the Babylon package’s function `babylon.parse()` on the file,
     // returning the Abstract Syntax Tree assigned to the variable `A` (ast)
-    const ast = bablyon.parse(sampleFile, { sourceType: 'module' });
+    const ast = bablyon.parse(sampleFile, { sourceType: 'module', plugins: [
+        'objectRestSpread'
+    ]});
 
     let allFunctionResults = [];
 
