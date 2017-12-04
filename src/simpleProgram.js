@@ -30,3 +30,7 @@ function noEffects(noModify, alsoNoModify) {
 function asdf(j) {
     j.modifies = 1;
 }
+
+// handle arrow function declarations
+const x = (a, b) => a + b;
+const modArrow = a => a.x = 12;

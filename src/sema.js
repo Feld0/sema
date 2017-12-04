@@ -1,12 +1,18 @@
 const bablyon = require('babylon');
 const fs = require('fs');
 
+const reportTypes = {
+    MUTATION: 'Mutation',
+    BLACKLIST: 'Blacklist',
+}
 
 const BLACKLIST_FUNCTIONS = [
     // array functions
     'splice',
     'fill',
     'shift',
+    'push',
+    'pop',
     'unshift',
 ];
 
@@ -16,25 +22,40 @@ function sema(fileToRead) {
 
     // 2. Use the Babylon package’s function `babylon.parse()` on the file,
     // returning the Abstract Syntax Tree assigned to the variable `A` (ast)
-    const ast = bablyon.parse(sampleFile);
+    const ast = bablyon.parse(sampleFile, { sourceType: 'module' });
 
-    const allFunctionResults = [];
+    let allFunctionResults = [];
+
     // todo: add class support
     const { body } = ast.program;
     // For each Node in the file, do the following:
     for (let i = 0; i < body.length; i++) {
         const node = body[i];
-        // Examine the node to see if it is a Function Declaration.
+        // Examine the node to see if it is a Function Declaration, or an arrow function declaration
         if (node.type === "FunctionDeclaration") {
-            allFunctionResults.push(processFunction(node));
+            allFunctionResults = allFunctionResults.concat(processFunction(node));
+        } else if (node.type === 'VariableDeclaration') {
+            // arrow function declarations are bound through levels of variableDeclaration and variabledeclarator,
+            // so we'll collapse them here
+            allFunctionResults = allFunctionResults.concat(...(node.declarations
+                    .reduce((acc, curr) => {
+                        // Only concat every ArrowFunctionExpression
+                        if (curr.type === 'VariableDeclarator' && curr.init.type === 'ArrowFunctionExpression') {
+                            return acc.concat(curr.init)
+                        }
+                        return acc;
+                    }, [])
+                    .map(processFunction)
+            ));
         }
     }
 
     for (let i = 0; i < allFunctionResults.length; i++) {
         if (typeof allFunctionResults[i] === "string") {
-            console.log("\033[32m", allFunctionResults[i], "\033[32m\n");
+            console.log("\033[31m", allFunctionResults[i], "\033[31m\n");
         } else {
-            console.log("\033[31m", allFunctionResults[i], "\033[31m");
+            // we won't do anything if there was no bad stuff to ferret out bad results
+            // console.log("\033[31m", allFunctionResults[i], "\033[31m");
         }
     }
 }
@@ -65,14 +86,15 @@ function processFunction(functionNode) {
                     // console.error('\n\n!!!Found a side effect node!');
                     // console.log('Line ', left.loc.start.line, 'contains a side effect, with the identifier', left.object.name, '\n');
                     sideEffectsAccumulator = sideEffectsAccumulator.concat(
-                        `Line ${left.loc.start.line} contains a side effect, namely modifing the identifier ${left.object.name}, which is bound in the function named ${functionNode.id.name} at line ${functionNode.loc.start.line}`
+                        `Line ${left.loc.start.line} contains a side effect, namely modifing the identifier ${left.object.name}, at declaration line ${functionNode.loc.start.line}`
                     );
                 }
             }
         }
 
         if (node.type === 'CallExpression') {
-            if (BLACKLIST_FUNCTIONS.includes(node.callee.property.name)) {
+            // only want to look at the function if it is a property of an object (all built-ins are property calls)
+            if (node.callee.property && BLACKLIST_FUNCTIONS.includes(node.callee.property.name)) {
                 sideEffectsAccumulator =  sideEffectsAccumulator.concat(
                     `Line ${node.loc.start.line} contains a blacklisted function, namely "${node.callee.property.name}". Please replace this with a function that does not mutate.`
                 );
@@ -82,9 +104,14 @@ function processFunction(functionNode) {
 
     if (sideEffectsAccumulator.length > 0) {
         return sideEffectsAccumulator;
-        // console.error(sideEffectsAccumulator);
     } else {
-        return `The given function ${functionNode.id.name} has no side effects or mutations we could find. Congratulations!`;
+        // let funName;
+        // if (functionNode.id) {
+        //     funName = functionNode.id.name;
+        // } else {
+        //     funName = `anonymously bound at line ${functionNode.loc.start.line}`;
+        // }
+        // return `The given function ${funName} has no side effects or mutations we could find. Congratulations!`;
     }
 }
 
