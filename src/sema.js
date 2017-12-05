@@ -1,10 +1,7 @@
+
 const bablyon = require('babylon');
 const fs = require('fs');
-
-const reportTypes = {
-    MUTATION: 'Mutation',
-    BLACKLIST: 'Blacklist',
-}
+const util = require('./utils');
 
 const BLACKLIST_FUNCTIONS = [
     // array functions
@@ -177,8 +174,12 @@ function pullAllStatements(nodesToInspect, allResults = []) {
 
 function main() {
     const dirToProcess = process.argv[2] || './src/';
-    fs.readdirSync(dirToProcess).forEach(filename => sema(`${dirToProcess}/${filename}`));
+
+    const all = util.getAllFilePathsInDirectory(dirToProcess).filter(x => !x.endsWith('.spec.js'));
+
+    all.forEach(filename => sema(filename));
 
 }
+
 main();
 
