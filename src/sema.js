@@ -173,7 +173,7 @@ function pullAllStatements(nodesToInspect, allResults = []) {
 
 
 function main() {
-    const dirToProcess = process.argv[2] || './src/';
+    const dirToProcess = process.argv[2] || './src';
 
     const all = util.getAllFilePathsInDirectory(dirToProcess)
         .filter(f => f.endsWith('.js'))
@@ -184,6 +184,7 @@ function main() {
             sema(filename)
         } catch (e) {
             console.log("\033[31m", `Could not process ${filename}, skipping...\n`, "\033[31m\n");
+            console.log('trace is: ', e, '\n')
         }
 
     });
