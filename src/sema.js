@@ -175,9 +175,18 @@ function pullAllStatements(nodesToInspect, allResults = []) {
 function main() {
     const dirToProcess = process.argv[2] || './src/';
 
-    const all = util.getAllFilePathsInDirectory(dirToProcess).filter(x => !x.endsWith('.spec.js'));
+    const all = util.getAllFilePathsInDirectory(dirToProcess)
+        .filter(f => f.endsWith('.js'))
+        .filter(f => !f.endsWith('.spec.js'));
 
-    all.forEach(filename => sema(filename));
+    all.forEach(filename => {
+        try {
+            sema(filename)
+        } catch (e) {
+            console.error(`Could not process ${filename}, skipping...`);
+        }
+
+    });
 
 }
 
