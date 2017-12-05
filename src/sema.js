@@ -52,7 +52,7 @@ function sema(fileToRead) {
     if (allFunctionResults.filter(r => typeof r === 'string').length === 0) {
         // console.log('We found no side effects');
         console.log("\033[32m", `For file ${fileToRead}:`, "\033[32m");
-        console.log("\033[32m", 'We found no side effects', "\033[32m");
+        console.log("\033[32m\t", 'We found no side effects', "\033[32m");
         console.log('\n');
         return;
     }
@@ -183,7 +183,7 @@ function main() {
         try {
             sema(filename)
         } catch (e) {
-            console.error(`Could not process ${filename}, skipping...`);
+            console.log("\033[31m", `Could not process ${filename}, skipping...\n`, "\033[31m\n");
         }
 
     });
