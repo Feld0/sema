@@ -25,11 +25,12 @@ function sema(fileToRead) {
 
     let allFunctionResults = [];
 
-    // todo: add class support
     const { body } = ast.program;
+
     // For each Node in the file, do the following:
     for (let i = 0; i < body.length; i++) {
         const node = body[i];
+
         // Examine the node to see if it is a Function Declaration, or an arrow function declaration
         if (node.type === "FunctionDeclaration") {
             allFunctionResults = allFunctionResults.concat(processFunction(node));
@@ -50,7 +51,6 @@ function sema(fileToRead) {
     }
 
     if (allFunctionResults.filter(r => typeof r === 'string').length === 0) {
-        // console.log('We found no side effects');
         console.log("\033[32m", `For file ${fileToRead}:`, "\033[32m");
         console.log("\033[32m\t", 'We found no side effects', "\033[32m");
         console.log('\n');
@@ -61,9 +61,6 @@ function sema(fileToRead) {
     for (let i = 0; i < allFunctionResults.length; i++) {
         if (typeof allFunctionResults[i] === "string") {
             console.log("\033[31m\t", allFunctionResults[i], "\033[31m\n");
-        } else {
-            // we won't do anything if there was no bad stuff to ferret out bad results
-            // console.log("\033[31m", allFunctionResults[i], "\033[31m");
         }
     }
 
@@ -82,7 +79,6 @@ function processFunction(functionNode) {
     // Examine each Statement in the Function Declaration Body, and for each:
     for (let i = 0; i < allNodes.length; i++) {
         const node = allNodes[i];
-        // console.log('A function statement: ', node, '\n');
 
         //check if the statement is an Assignment Expression. If so:
         if (node.type === "AssignmentExpression") {
@@ -93,8 +89,6 @@ function processFunction(functionNode) {
             if (left.type === 'MemberExpression') {
 
                 if (left.object.type === 'Identifier' && ids.includes(left.object.name)) {
-                    // console.error('\n\n!!!Found a side effect node!');
-                    // console.log('Line ', left.loc.start.line, 'contains a side effect, with the identifier', left.object.name, '\n');
                     sideEffectsAccumulator = sideEffectsAccumulator.concat(
                         `Line ${left.loc.start.line} contains a side effect, namely modifing the identifier ${left.object.name}, at declaration line ${functionNode.loc.start.line}`
                     );
@@ -114,14 +108,6 @@ function processFunction(functionNode) {
 
     if (sideEffectsAccumulator.length > 0) {
         return sideEffectsAccumulator;
-    } else {
-        // let funName;
-        // if (functionNode.id) {
-        //     funName = functionNode.id.name;
-        // } else {
-        //     funName = `anonymously bound at line ${functionNode.loc.start.line}`;
-        // }
-        // return `The given function ${funName} has no side effects or mutations we could find. Congratulations!`;
     }
 }
 
@@ -175,11 +161,11 @@ function pullAllStatements(nodesToInspect, allResults = []) {
 function main() {
     const dirToProcess = process.argv[2] || './src';
 
-    const all = util.getAllFilePathsInDirectory(dirToProcess)
+    const filesToProcess = util.getAllFilePathsInDirectory(dirToProcess)
         .filter(f => f.endsWith('.js'))
         .filter(f => !f.endsWith('.spec.js'));
 
-    all.forEach(filename => {
+    filesToProcess.forEach(filename => {
         try {
             sema(filename)
         } catch (e) {
@@ -188,7 +174,6 @@ function main() {
         }
 
     });
-
 }
 
 main();
