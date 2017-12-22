@@ -1,4 +1,9 @@
-const { readdirSync, statSync } = require('fs');
+const { readFileSync, readdirSync, statSync } = require('fs');
+
+const CONFIG_FILENAME = 'semaconfig.json';
+const DEFAULT_CONFIG = {
+    jsonOutput: false,
+};
 
 const getFilename = (path, name) => `${path}/${name}`;
 
@@ -17,6 +22,18 @@ function getAllFilePathsInDirectory(path, acc = []) {
     return res;
 }
 
+function loadConfig(path = './') {
+    try {
+        const optionsFile = readFileSync(getFilename(path, CONFIG_FILENAME), 'utf-8');
+
+        console.info("Found config file, importing options");
+        return JSON.parse(optionsFile);
+    } catch (e) {
+        console.info("Could not read config file, returning default config.");
+        return DEFAULT_CONFIG;
+    }
+}
+
 const reportTypes = {
     MUTATION: 'Mutation',
     BLACKLIST: 'Blacklist',
@@ -24,3 +41,4 @@ const reportTypes = {
 
 
 exports.getAllFilePathsInDirectory = getAllFilePathsInDirectory;
+exports.loadConfig = loadConfig;

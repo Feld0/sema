@@ -159,11 +159,15 @@ function pullAllStatements(nodesToInspect, allResults = []) {
 
 
 function main() {
+    // try to load config
+    const options = util.loadConfig();
+    console.info("Options are: ", options);
+
     const dirToProcess = process.argv[2] || './src';
 
     const filesToProcess = util.getAllFilePathsInDirectory(dirToProcess)
-        .filter(f => f.endsWith('.js'))
-        .filter(f => !f.endsWith('.spec.js'));
+        .filter(filename => filename.endsWith('.js'))
+        .filter(filename => !filename.endsWith('.spec.js'));
 
     filesToProcess.forEach(filename => {
         try {
